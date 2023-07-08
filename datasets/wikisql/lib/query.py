@@ -45,6 +45,24 @@ class Query:
     def to_dict(self):
         return {'sel': self.sel_index, 'agg': self.agg_index, 'conds': self.conditions}
 
+    def to_query(self, types):
+        if self.agg_ops[self.agg_index]:
+            rep = 'SELECT {agg} ({sel}) FROM table'.format(
+                agg=self.agg_ops[self.agg_index],
+                sel='col{}'.format(self.sel_index),
+            )
+        else:
+            rep = f'SELECT col{self.sel_index} FROM table'
+        if self.conditions:
+            cond_strings = []
+            for i, o, v in self.conditions:
+                if types[i] == "text":
+                    cond_strings.append(f"col{i} {self.cond_ops[o]} '{v}'")
+                else:
+                    cond_strings.append(f"col{i} {self.cond_ops[o]} {v}")
+            rep += ' WHERE ' + ' AND '.join(cond_strings)
+        return rep
+
     def lower(self):
         conds = []
         for col, op, cond in self.conditions:
